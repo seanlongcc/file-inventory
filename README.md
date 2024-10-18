@@ -11,7 +11,7 @@
 2. **Navigate to the Directory**:
 
    ```bash
-   cd filelister
+   cd file-inventory
    ```
 
 3. **Alternatively**, you can download the `list_files_cli.py` script directly from the repository.
@@ -30,8 +30,6 @@ This command will generate an output file named `file_list_{timestamp}.txt` in t
 
 ### Advanced Options
 
-FileLister offers a range of command-line options to customize its behavior:
-
 - **Specify Multiple Directories**:
 
   ```bash
@@ -43,6 +41,20 @@ FileLister offers a range of command-line options to customize its behavior:
   ```bash
   python3 list_files_cli.py /path/to/directory -o my_files.txt
   ```
+
+- **Choose Output Format (Plain Text or HTML with Clickable Links)**:
+
+  - **Plain Text**:
+
+    ```bash
+    python3 list_files_cli.py /path/to/directory --format txt
+    ```
+
+  - **HTML**:
+
+    ```bash
+    python3 list_files_cli.py /path/to/directory --format html -o my_files.html
+    ```
   
 - **Filter by File Extensions**:
 
@@ -62,22 +74,30 @@ FileLister offers a range of command-line options to customize its behavior:
   python3 list_files_cli.py /path/to/directory --depth 2
   ```
   
+- **Skip Hidden Files and Directories**:
+
+  ```bash
+  python3 list_files_cli.py /path/to/directory --skip-hidden
+  ```
+  
 - **Combine Multiple Options**:
 
   ```bash
-  python3 list_files_cli.py /path/to/dir1 /path/to/dir2 -e .jpg .png --sort date --order asc --depth 1 -o images_list.txt
+  python3 list_files_cli.py /path/to/dir1 /path/to/dir2 -e .jpg .png --sort date --order asc --depth 1 --skip-hidden --format html -o images_list.html
   ```
 
 ### Command-Line Arguments
 
-| Argument            | Short Option | Description                                                                                                                                       | Default                       |
-|---------------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
-| `directories`       | N/A          | One or more directory paths to list files from.                                                                                                | **Required**                  |
-| `-o`, `--output`    | `-o`         | Specify a custom name for the output file. If not provided, defaults to `file_list_{timestamp}.txt`.                                            | `file_list_{timestamp}.txt`   |
-| `-e`, `--extensions`| `-e`         | Filter files by extensions. Provide one or more extensions (e.g., `.txt`, `.py`).                                                              | `None` (includes all files)    |
-| `--sort`            | N/A          | Sort files by criteria: `name`, `size`, or `date`.                                                                                                | `name`                        |
-| `--order`           | N/A          | Order of sorting: `asc` for ascending or `desc` for descending.                                                                                   | `asc`                         |
-| `--depth`           | N/A          | Maximum depth for directory traversal. `0` means only the specified directories, `1` includes immediate subdirectories, etc. `-1` for unlimited.| `-1` (unlimited)              |
+| Argument             | Short Option | Description                                                                                                                                       | Default                       |
+|----------------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| `directories`        | N/A          | One or more directory paths to list files from.                                                                                                | **Required**                  |
+| `-o`, `--output`     | `-o`         | Specify a custom name for the output file. If not provided, defaults to `file_list_{timestamp}.txt` or `.html` based on the `--format` argument. | `file_list_{timestamp}.txt` or `.html` |
+| `-f`, `--format`           | N/A          | Output file format: `txt` for plain text or `html` for HTML with clickable links.                                                                 | `txt`                         |
+| `-e`, `--extensions` | `-e`         | Filter files by extensions. Provide one or more extensions (e.g., `.txt`, `.py`).                                                              | `None` (includes all files)    |
+| `--sort`             | N/A          | Sort files by criteria: `name`, `size`, or `date`.                                                                                                | `name`                        |
+| `--order`            | N/A          | Order of sorting: `asc` for ascending or `desc` for descending.                                                                                   | `asc`                         |
+| `--depth`            | N/A          | Maximum depth for directory traversal. `0` means only the specified directories, `1` includes immediate subdirectories, etc. `-1` for unlimited.| `-1` (unlimited)              |
+| `--skip-hidden`      | N/A          | Skip hidden files and directories (those starting with a dot `.`).                                                                                | `False`                       |
 
 ### Examples
 
@@ -108,9 +128,17 @@ FileLister offers a range of command-line options to customize its behavior:
 4. **List All Files in Current Directory, Excluding Hidden Files**:
 
    ```bash
-   python3 list_files_cli.py . -e .*
+   python3 list_files_cli.py . --skip-hidden
    ```
 
-   - **Note**: To exclude hidden files, you can modify the script to skip files starting with a dot or adjust the extension filters accordingly.
+   - **Output**: `file_list_1701234567.txt` containing all non-hidden files in the current directory and its subdirectories.
+
+5. **Generate an HTML File with Clickable Links**:
+
+   ```bash
+   python3 list_files_cli.py /home/user/Documents --format html -o my_files.html
+   ```
+
+   - **Output**: `my_files.html` containing a list of files with clickable links that open the files in their default applications.
 
 ---
