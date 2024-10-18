@@ -4,7 +4,6 @@ import os
 import time
 import argparse
 import sys
-from datetime import datetime
 
 def parse_arguments():
     """
@@ -12,7 +11,8 @@ def parse_arguments():
 
     Returns:
         argparse.Namespace: Parsed arguments containing directories, optional output file name,
-                            file extensions for filtering, sorting criteria, order, and depth control.
+                            file extensions for filtering, sorting criteria, order, depth control,
+                            and an option to skip hidden files.
     """
     parser = argparse.ArgumentParser(
         description="List all files within specified directories and save their paths to a text file."
@@ -56,6 +56,11 @@ def parse_arguments():
         default=-1,
         help="Maximum depth for directory traversal. 0 means only the specified directories, 1 includes immediate subdirectories, etc. Default is -1 (unlimited)."
     )
+    parser.add_argument(
+        "--skip-hidden",
+        action='store_true',
+        help="Skip hidden files and directories (those starting with a dot '.')."
+    )
     return parser.parse_args()
 
 def generate_output_filename(provided_name=None):
@@ -97,13 +102,14 @@ def get_file_info(file_path):
         print(f"Error accessing file '{file_path}': {e}", file=sys.stderr)
         return None
 
-def traverse_directory(directory, max_depth, current_depth=0):
+def traverse_directory(directory, max_depth, skip_hidden, current_depth=0):
     """
     Traverse the directory up to the specified depth.
 
     Args:
         directory (str): The directory to traverse.
         max_depth (int): Maximum depth to traverse. -1 for unlimited.
+        skip_hidden (bool): Whether to skip hidden files and directories.
         current_depth (int, optional): Current depth level. Defaults to 0.
 
     Yields:
@@ -115,16 +121,18 @@ def traverse_directory(directory, max_depth, current_depth=0):
     try:
         with os.scandir(directory) as it:
             for entry in it:
+                if skip_hidden and entry.name.startswith('.'):
+                    continue  # Skip hidden files and directories
                 if entry.is_file():
                     yield entry.path
                 elif entry.is_dir(follow_symlinks=False):
-                    yield from traverse_directory(entry.path, max_depth, current_depth + 1)
-    except PermissionError as e:
+                    yield from traverse_directory(entry.path, max_depth, skip_hidden, current_depth + 1)
+    except PermissionError:
         print(f"Permission denied: '{directory}'. Skipping...", file=sys.stderr)
     except Exception as e:
         print(f"Error accessing directory '{directory}': {e}", file=sys.stderr)
 
-def list_files(directories, output_file, extensions=None, sort_by='name', order='asc', depth=-1):
+def list_files(directories, output_file, extensions=None, sort_by='name', order='asc', depth=-1, skip_hidden=False):
     """
     Traverse the directories, list all files with optional filtering and sorting, and write their paths to the output file.
 
@@ -135,12 +143,13 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
         sort_by (str): Criterion to sort by ('name', 'size', 'date').
         order (str): Order of sorting ('asc' or 'desc').
         depth (int): Maximum depth for directory traversal. -1 for unlimited.
+        skip_hidden (bool): Whether to skip hidden files and directories.
 
     Returns:
         int: Total number of files listed.
     """
     files_list = []
-    file_count = 0
+    total_files = 0
 
     # Normalize extensions if provided
     if extensions:
@@ -151,7 +160,7 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
             print(f"Warning: The directory '{directory}' does not exist or is not accessible. Skipping...", file=sys.stderr)
             continue
 
-        for file_path in traverse_directory(directory, depth):
+        for file_path in traverse_directory(directory, depth, skip_hidden):
             if extensions:
                 file_ext = os.path.splitext(file_path)[1].lower()
                 if file_ext not in extensions:
@@ -159,6 +168,7 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
             file_info = get_file_info(file_path)
             if file_info:
                 files_list.append((file_path, file_info))
+                total_files += 1
 
     # Sorting
     reverse_order = True if order == 'desc' else False
@@ -172,14 +182,16 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
     # Write to output file
     try:
         with open(output_file, 'w', encoding='utf-8') as f:
+            # Write total number of files as the first line
+            f.write(f"Total number of files: {total_files}\n")
+            # Write each file path on a new line
             for file_path, _ in files_list:
                 f.write(file_path + '\n')
-                file_count += 1
     except Exception as e:
         print(f"Error writing to file '{output_file}': {e}", file=sys.stderr)
         sys.exit(1)
 
-    return file_count
+    return total_files
 
 def main():
     args = parse_arguments()
@@ -189,12 +201,13 @@ def main():
     sort_by = args.sort
     order = args.order
     depth = args.depth
+    skip_hidden = args.skip_hidden
 
     # Generate the output file name
     output_file = generate_output_filename(provided_output)
 
-    # List files with filtering, sorting, and depth control, then write to the output file
-    total_files = list_files(directories, output_file, extensions, sort_by, order, depth)
+    # List files with filtering, sorting, depth control, and hidden files option, then write to the output file
+    total_files = list_files(directories, output_file, extensions, sort_by, order, depth, skip_hidden)
 
     print(f"File list has been written to '{output_file}'.")
     print(f"Total number of files: {total_files}")
