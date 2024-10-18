@@ -1,14 +1,12 @@
 # File Inventory CLI Tool
 
-### Download the Script
+## Download the Script
 
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/yourusername/filelister.git
+   git clone https://github.com/seanlongcc/file-inventory.git
    ```
-
-   *(Replace `yourusername` with your actual GitHub username if applicable.)*
 
 2. **Navigate to the Directory**:
 
@@ -19,8 +17,6 @@
 3. **Alternatively**, you can download the `list_files_cli.py` script directly from the repository.
 
 ## Usage
-
-FileLister is designed to be straightforward and flexible. Below are guidelines on how to use the tool effectively.
 
 ### Basic Usage
 
@@ -116,16 +112,5 @@ FileLister offers a range of command-line options to customize its behavior:
    ```
 
    - **Note**: To exclude hidden files, you can modify the script to skip files starting with a dot or adjust the extension filters accordingly.
-
-## Output
-
-The output is a plain text file containing the list of file paths that match the specified criteria. Each file path is on a separate line. At the end of the execution, the script prints a summary indicating the location of the output file and the total number of files listed.
-
-**Example Output**:
-
-```
-File list has been written to 'file_list_1701234567.txt'.
-Total number of files: 123
-```
 
 ---
