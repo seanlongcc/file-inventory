@@ -48,9 +48,9 @@ def parse_arguments():
     parser.add_argument(
         "--sort",
         type=str,
-        choices=['name', 'size', 'date'],
-        default='name',
-        help="Sort files by 'name', 'size', or 'date'. Default is 'name'."
+        choices=['none', 'name', 'size', 'date'],
+        default='none',
+        help="Sort files by criteria: 'none' for no sorting, 'name', 'size', or 'date'. Default is 'none'."
     )
     parser.add_argument(
         "--order",
@@ -172,7 +172,7 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
         directories (list): List of directories to traverse.
         output_file (str): The file to write the list of file paths.
         extensions (list, optional): List of file extensions to filter by.
-        sort_by (str): Criterion to sort by ('name', 'size', 'date').
+        sort_by (str): Criterion to sort by ('none', 'name', 'size', 'date').
         order (str): Order of sorting ('asc' or 'desc').
         depth (int): Maximum depth for directory traversal. -1 for unlimited.
         skip_hidden (bool): Whether to skip hidden files and directories.
@@ -204,13 +204,15 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
                 total_files += 1
 
     # Sorting
-    reverse_order = True if order == 'desc' else False
-    if sort_by == 'name':
-        files_list.sort(key=lambda x: x[1]['name'].lower(), reverse=reverse_order)
-    elif sort_by == 'size':
-        files_list.sort(key=lambda x: x[1]['size'], reverse=reverse_order)
-    elif sort_by == 'date':
-        files_list.sort(key=lambda x: x[1]['date'], reverse=reverse_order)
+    if sort_by != 'none':
+        reverse_order = True if order == 'desc' else False
+        if sort_by == 'name':
+            files_list.sort(key=lambda x: x[1]['name'].lower(), reverse=reverse_order)
+        elif sort_by == 'size':
+            files_list.sort(key=lambda x: x[1]['size'], reverse=reverse_order)
+        elif sort_by == 'date':
+            files_list.sort(key=lambda x: x[1]['date'], reverse=reverse_order)
+    # If sort_by is 'none', retain the original traversal order
 
     # Write to output file based on the chosen format
     try:
