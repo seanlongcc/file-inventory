@@ -14,7 +14,7 @@ def parse_arguments():
     Returns:
         argparse.Namespace: Parsed arguments containing directories, optional output file name,
                             file extensions for filtering, sorting criteria, order, depth control,
-                            output format, an option to skip hidden files, and a substring to filter by.
+                            output format, an option to skip hidden files, and substrings to filter by.
     """
     parser = argparse.ArgumentParser(
         description="List all files within specified directories and save their paths to a text or HTML file."
@@ -32,7 +32,7 @@ def parse_arguments():
         help="Optional output file name. Defaults to 'file_list_{timestamp}.txt' or '.html' based on the '--format' argument."
     )
     parser.add_argument(
-        "-f","--format",
+        "-f", "--format",
         type=str,
         choices=['txt', 'html'],
         default='txt',
@@ -71,12 +71,31 @@ def parse_arguments():
         help="Skip hidden files and directories (those starting with a dot '.')."
     )
     
+    # **Added: --case-sensitive Flag**
+    parser.add_argument(
+        "--case-sensitive",
+        action='store_true',
+        help="Enable case-sensitive matching for the --contains filter. By default, matching is case-insensitive."
+    )
+    
+    # **Modified: --contains Argument to Accept Multiple Substrings**
     parser.add_argument(
         "--contains",
         type=str,
+        nargs='+',  # Accept one or more substrings
         default=None,
-        help="Filter files to include only those whose names contain the specified substring."
+        help="Filter files to include only those whose names contain the specified substring(s). Provide one or more substrings."
     )
+    
+    # **Added: --contains-mode Flag**
+    parser.add_argument(
+        "--contains-mode",
+        type=str,
+        choices=['and', 'or'],
+        default='or',
+        help="Define how multiple substrings are matched in the --contains filter: 'and' requires all substrings to be present, 'or' requires any substring to be present. Default is 'or'."
+    )
+    
     return parser.parse_args()
 
 def generate_output_filename(provided_name=None, output_format='txt'):
@@ -172,7 +191,8 @@ def traverse_directory(directory, max_depth, skip_hidden, current_depth=0):
         print(f"Error accessing directory '{directory}': {e}", file=sys.stderr)
 
 def list_files(directories, output_file, extensions=None, sort_by='name', order='asc',
-              depth=-1, skip_hidden=False, output_format='txt', contains=None):
+              depth=-1, skip_hidden=False, output_format='txt', contains=None, 
+              case_sensitive=False, contains_mode='or'):
     """
     Traverse the directories, list all files with optional filtering and sorting, and write their paths to the output file.
 
@@ -185,7 +205,9 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
         depth (int): Maximum depth for directory traversal. -1 for unlimited.
         skip_hidden (bool): Whether to skip hidden files and directories.
         output_format (str): The desired output format ('txt' or 'html').
-        contains (str, optional): Substring to filter file names.
+        contains (list, optional): List of substrings to filter file names.
+        case_sensitive (bool): Whether the --contains filter is case-sensitive.
+        contains_mode (str): Logical operation for multiple substrings ('and' or 'or').
 
     Returns:
         int: Total number of files listed.
@@ -205,9 +227,21 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
         for file_path in traverse_directory(directory, depth, skip_hidden):
             file_name = os.path.basename(file_path)
             
-            # Apply --contains filter if specified
-            if contains and contains.lower() not in file_name.lower():
-                continue  # Skip files that do not contain the specified substring
+            # **Updated: Apply --contains filter if specified with AND/OR logic**
+            if contains:
+                # Determine comparison name based on case sensitivity
+                comparison_name = file_name if case_sensitive else file_name.lower()
+                # Prepare substrings based on case sensitivity
+                substrings = contains if case_sensitive else [substr.lower() for substr in contains]
+                
+                if contains_mode == 'and':
+                    # All substrings must be present
+                    if not all(substr in comparison_name for substr in substrings):
+                        continue  # Skip files that do not contain all specified substrings
+                elif contains_mode == 'or':
+                    # Any substring must be present
+                    if not any(substr in comparison_name for substr in substrings):
+                        continue  # Skip files that do not contain any of the specified substrings
             
             if extensions:
                 file_ext = os.path.splitext(file_path)[1].lower()
@@ -270,13 +304,27 @@ def main():
     depth = args.depth
     skip_hidden = args.skip_hidden
     output_format = args.format
-    contains = args.contains  # Capture the --contains argument
+    contains = args.contains  # List of substrings for --contains
+    case_sensitive = args.case_sensitive  # Whether matching is case-sensitive
+    contains_mode = args.contains_mode  # 'and' or 'or' for substring matching
 
     # Generate the output file name with appropriate extension
     output_file = generate_output_filename(provided_output, output_format)
 
-    # List files with filtering, sorting, depth control, hidden files option, and --contains filter, then write to the output file
-    total_files = list_files(directories, output_file, extensions, sort_by, order, depth, skip_hidden, output_format, contains)
+    # List files with filtering, sorting, depth control, hidden files option, --contains filter, and write to the output file
+    total_files = list_files(
+        directories,
+        output_file,
+        extensions,
+        sort_by,
+        order,
+        depth,
+        skip_hidden,
+        output_format,
+        contains,
+        case_sensitive,
+        contains_mode  # Pass the contains_mode parameter
+    )
 
     print(f"File list has been written to '{output_file}'.")
     print(f"Total number of files: {total_files}")
