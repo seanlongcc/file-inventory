@@ -98,6 +98,7 @@ This command will generate an output file named `file_list_{timestamp}.txt` in t
 | `--order`            | N/A          | Order of sorting: `asc` for ascending or `desc` for descending.                                                                                   | `asc`                         |
 | `--depth`            | N/A          | Maximum depth for directory traversal. `0` means only the specified directories, `1` includes immediate subdirectories, etc. `-1` for unlimited.| `-1` (unlimited)              |
 | `--skip-hidden`      | N/A          | Skip hidden files and directories (those starting with a dot `.`).                                                                                | `False`                       |
+| `--contains`         | N/A          | Filter files to include only those whose names contain the specified substring.                                                                   | `None`                        |
 
 ### Examples
 

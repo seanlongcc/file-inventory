@@ -14,7 +14,7 @@ def parse_arguments():
     Returns:
         argparse.Namespace: Parsed arguments containing directories, optional output file name,
                             file extensions for filtering, sorting criteria, order, depth control,
-                            output format, and an option to skip hidden files.
+                            output format, an option to skip hidden files, and a substring to filter by.
     """
     parser = argparse.ArgumentParser(
         description="List all files within specified directories and save their paths to a text or HTML file."
@@ -29,7 +29,7 @@ def parse_arguments():
         "-o", "--output",
         type=str,
         default=None,
-        help="Optional output file name. Defaults to 'file_list_{timestamp}.txt'."
+        help="Optional output file name. Defaults to 'file_list_{timestamp}.txt' or '.html' based on the '--format' argument."
     )
     parser.add_argument(
         "-f","--format",
@@ -69,6 +69,13 @@ def parse_arguments():
         "--skip-hidden",
         action='store_true',
         help="Skip hidden files and directories (those starting with a dot '.')."
+    )
+    
+    parser.add_argument(
+        "--contains",
+        type=str,
+        default=None,
+        help="Filter files to include only those whose names contain the specified substring."
     )
     return parser.parse_args()
 
@@ -164,7 +171,8 @@ def traverse_directory(directory, max_depth, skip_hidden, current_depth=0):
     except Exception as e:
         print(f"Error accessing directory '{directory}': {e}", file=sys.stderr)
 
-def list_files(directories, output_file, extensions=None, sort_by='name', order='asc', depth=-1, skip_hidden=False, output_format='txt'):
+def list_files(directories, output_file, extensions=None, sort_by='name', order='asc',
+              depth=-1, skip_hidden=False, output_format='txt', contains=None):
     """
     Traverse the directories, list all files with optional filtering and sorting, and write their paths to the output file.
 
@@ -177,6 +185,7 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
         depth (int): Maximum depth for directory traversal. -1 for unlimited.
         skip_hidden (bool): Whether to skip hidden files and directories.
         output_format (str): The desired output format ('txt' or 'html').
+        contains (str, optional): Substring to filter file names.
 
     Returns:
         int: Total number of files listed.
@@ -194,6 +203,12 @@ def list_files(directories, output_file, extensions=None, sort_by='name', order=
             continue
 
         for file_path in traverse_directory(directory, depth, skip_hidden):
+            file_name = os.path.basename(file_path)
+            
+            # Apply --contains filter if specified
+            if contains and contains.lower() not in file_name.lower():
+                continue  # Skip files that do not contain the specified substring
+            
             if extensions:
                 file_ext = os.path.splitext(file_path)[1].lower()
                 if file_ext not in extensions:
@@ -255,12 +270,13 @@ def main():
     depth = args.depth
     skip_hidden = args.skip_hidden
     output_format = args.format
+    contains = args.contains  # Capture the --contains argument
 
     # Generate the output file name with appropriate extension
     output_file = generate_output_filename(provided_output, output_format)
 
-    # List files with filtering, sorting, depth control, and hidden files option, then write to the output file
-    total_files = list_files(directories, output_file, extensions, sort_by, order, depth, skip_hidden, output_format)
+    # List files with filtering, sorting, depth control, hidden files option, and --contains filter, then write to the output file
+    total_files = list_files(directories, output_file, extensions, sort_by, order, depth, skip_hidden, output_format, contains)
 
     print(f"File list has been written to '{output_file}'.")
     print(f"Total number of files: {total_files}")
